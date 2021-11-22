@@ -1,6 +1,9 @@
 import datetime
 import requests
 import json
+from dotenv import load_dotenv
+import os
+import tweepy
 
 #========================calc_percent=================
 def get_submission():
@@ -64,6 +67,23 @@ def calc_percent():
     percent = sum(diff_vec) / sum(goal_diff_vec)
     return percent
 
-print(calc_percent())
-
 #========================update_icon=================
+
+load_dotenv()
+
+CK = os.getenv('API_KEY')
+CS = os.getenv('API_KEY_SECRET')
+AT = os.getenv('ACCESS_TOKEN')
+AS = os.getenv('ACCESS_TOKEN_SECRET')
+
+auth = tweepy.OAuthHandler(CK, CS)
+auth.set_access_token(AT, AS)
+api = tweepy.API(auth)
+
+percent = int(((calc_percent() * 100) // 5) * 5)
+print(percent)
+s = str(percent)
+while len(s) != 3:
+    s = '0' + s
+filename = f"pie_chart_image/{s}.jpg"
+api.update_profile_image(filename)
