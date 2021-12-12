@@ -29,6 +29,18 @@ def make_circle(sx, sy, inner_d, outer_d, percent, color, img):
                 if calc_deg(x - sx, y - sy) / 360 <= percent:
                     img.putpixel((x, y), color)
 
+def make_colorful_circle(sx, sy, inner_d, outer_d, percent, color, img):
+    width, height = img.size
+    for y in range(height):
+        for x in range(width):
+            if inner_d ** 2 < (x - sx) ** 2 + (y - sy) ** 2 <= outer_d ** 2:
+                # temp = int(calc_deg(x - sx, y - sy) / 360 * 250)
+                # print(temp)
+                # img.putpixel((x, y), (temp, temp, temp))
+
+                if calc_deg(x - sx, y - sy) / 360 <= percent:
+                    img.putpixel((x, y), color)
+
 def make_bow(sx, sy, d, percent, color, img):
     width, height = img.size
     H = 2 * d
