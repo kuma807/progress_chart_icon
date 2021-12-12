@@ -110,8 +110,10 @@ AS = os.getenv('ACCESS_TOKEN_SECRET')
 auth = tweepy.OAuthHandler(CK, CS)
 auth.set_access_token(AT, AS)
 api = tweepy.API(auth)
+is_same = False
 
 def pie_chart():
+    global is_same
     img = Image.open('original_icon.jpg')
     width, height = img.size
     make_circle(width // 2 - 1, height // 2 - 1, 152, 202, 100 / 100, (224 ,224, 222), img)
@@ -120,11 +122,15 @@ def pie_chart():
     with open(file_path) as f:
         s = f.read()
         if s == str(percent):
-            exit()
+            is_same = True
+    if is_same:
+        return
     print("update icon")
     with open(file_path, mode='w') as f:
         f.write(str(percent))
     make_partiall_circle(width // 2 - 1, height // 2 - 1, 152, 202, 0 / 100, percent, (0, 0, 0), img)
     img.save('created_icon.jpg')
 pie_chart()
-api.update_profile_image("created_icon.jpg")
+
+if not is_same:
+    api.update_profile_image("created_icon.jpg")
