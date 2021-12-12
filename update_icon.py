@@ -60,7 +60,6 @@ def calc_percent():
         diff_vec[i] = min(diff_vec[i], goal_diff_vec[i])
     percent = sum(diff_vec) / sum(goal_diff_vec)
     return percent
-
 #========================make_icon=================
 
 def calc_deg(x, y):
@@ -99,19 +98,6 @@ def make_partiall_circle(sx, sy, inner_d, outer_d, min_percent, max_percent, col
                 if min_percent <= calc_deg(x - sx, y - sy) / 360 <= max_percent:
                     img.putpixel((x, y), color)
 
-def make_bow(sx, sy, d, percent, color, img):
-    width, height = img.size
-    H = 2 * d
-    for y in range(height):
-        h_now = (sy + d) - y
-        for x in range(width):
-            temp = img.getpixel((x, y))
-            if sum(temp) <= 500:
-                continue
-            if (x - sx) ** 2 + (y - sy) ** 2 <= d ** 2:
-                if h_now / H <= percent:
-                    img.putpixel((x, y), color)
-
 #========================update_icon=================
 
 load_dotenv()
@@ -125,54 +111,20 @@ auth = tweepy.OAuthHandler(CK, CS)
 auth.set_access_token(AT, AS)
 api = tweepy.API(auth)
 
-def pie_chart_colorful():
+def pie_chart():
     img = Image.open('original_icon.jpg')
     width, height = img.size
-    diff_vec = make_diff_vec()
-    goal_diff_vec = load_goal()
-    all = 0
-    for i in range(len(goal_diff_vec)):
-        all += goal_diff_vec[i]
-    rgb = [(129, 129, 129), (129, 63, 0), (0, 129, 0), (0, 192, 192), (0, 0, 255), (192, 192, 0), (255, 129, 0), (255, 0, 0), (225, 82, 15), (192, 192, 192), (255, 195, 10)]
-    # for i in range(len(rgb)):
-    #     t = list(rgb[i])
-    #     for j in range(3):
-    #         t[j] = t[j]
-    #     rgb[i] = tuple(t)
-    #gray
-    make_partiall_circle(width // 2 - 1, height // 2 - 1, 152, 202, 0 / 100, 0 / 100, (224, 224, 222), img)
-    for i in range(len(diff_vec)):
-        diff_vec[i] = min(diff_vec[i], goal_diff_vec[i])
-    #black
-    make_partiall_circle(width // 2 - 1, height // 2 - 1, 152, 202, 0 / 100, sum(diff_vec) / sum(goal_diff_vec), (0, 0, 0), img)
-    now = sum(diff_vec)
-    for i in range(len(diff_vec)):
-        now_end = now + (goal_diff_vec[i] - diff_vec[i])
-        make_partiall_circle(width // 2 - 1, height // 2 - 1, 152, 202, now / sum(goal_diff_vec), now_end / sum(goal_diff_vec), rgb[i], img)
-        now = now_end
-    filename = "created_icon.jpg"
-    img.save(filename)
-    img.show()
-
-def pie_chart_partiall_colorful():
-    img = Image.open('original_icon.jpg')
-    width, height = img.size
-    diff_vec = make_diff_vec()
-    goal_diff_vec = load_goal()
-    all = 0
-    for i in range(len(goal_diff_vec)):
-        all += goal_diff_vec[i]
-    rgb = [(129, 129, 129), (129, 63, 0), (0, 129, 0), (0, 192, 192), (0, 0, 255), (192, 192, 0), (255, 129, 0), (255, 0, 0), (225, 82, 15), (192, 192, 192), (255, 195, 10)]
-    make_partiall_circle(width // 2 - 1, height // 2 - 1, 152, 202, 0 / 100, 100 / 100, (224, 224, 222), img)
-    for i in range(len(diff_vec)):
-        diff_vec[i] = min(diff_vec[i], goal_diff_vec[i])
-    now = 0
-    for i in range(len(diff_vec)):
-        now_end = now + diff_vec[i] + 0.1
-        make_partiall_circle(width // 2 - 1, height // 2 - 1, 152, 202, now / sum(goal_diff_vec), now_end / sum(goal_diff_vec), rgb[i], img)
-        now += goal_diff_vec[i]
-    filename = "created_icon.jpg"
-    img.save(filename)
-    img.show()
-
-pie_chart_partiall_colorful()
+    make_circle(width // 2 - 1, height // 2 - 1, 152, 202, 100 / 100, (224 ,224, 222), img)
+    percent = calc_percent()
+    file_path = "last_percent.txt"
+    with open(file_path) as f:
+        s = f.read()
+        if s == str(percent):
+            exit()
+    print("update icon")
+    with open(file_path, mode='w') as f:
+        f.write(str(percent))
+    make_partiall_circle(width // 2 - 1, height // 2 - 1, 152, 202, 0 / 100, percent, (0, 0, 0), img)
+    img.save('created_icon.jpg')
+pie_chart()
+api.update_profile_image("created_icon.jpg")
