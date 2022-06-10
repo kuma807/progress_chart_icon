@@ -106,8 +106,6 @@ def is_update(percent):
         f.write(str(percent))
     return True
 #========================update_icon=================
-
-
 def pie_chart(percent):
     img = Image.open('original_icon.jpg')
     width, height = img.size
