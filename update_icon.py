@@ -26,7 +26,7 @@ def load_goal():
     with open('goal.txt') as f:
         l = f.readlines()
         for i in range(len(l)):
-            l[i] = l[i].replace("\n", "")
+            l[i] = l[i].replace('\n', '')
             for j in range(len(color)):
                 if color[j] in l[i]:
                     goal_diff_vec[j] = int(l[i][1:])
@@ -43,19 +43,17 @@ def make_diff_vec():
             s.add(sub['problem_id'])
     for id in s:
         if id not in diff_data:
-            print(f"id:{id} not in diff data")
+            print(f'id:{id} not in diff data')
             #アイコンにエラー表示
             continue
         diff = max(0, diff_data[id]['difficulty'])
         if 5000 < diff:
-            print(f"unexpected diff on id:{id}")
-            continue;
+            print(f'unexpected diff on id:{id}')
+            continue
         diff_vec[diff // 400] += 1
     return diff_vec
 
-def calc_percent():
-    diff_vec = make_diff_vec()
-    goal_diff_vec = load_goal()
+def calc_percent(diff_vec, goal_diff_vec):
     for i in range(len(diff_vec)):
         diff_vec[i] = min(diff_vec[i], goal_diff_vec[i])
     percent = sum(diff_vec) / sum(goal_diff_vec)
@@ -98,33 +96,60 @@ def make_partiall_circle(sx, sy, inner_d, outer_d, min_percent, max_percent, col
                 if min_percent <= calc_deg(x - sx, y - sy) / 360 <= max_percent:
                     img.putpixel((x, y), color)
 
-#========================update_icon=================
-
-load_dotenv()
-
-CK = os.getenv('API_KEY')
-CS = os.getenv('API_KEY_SECRET')
-AT = os.getenv('ACCESS_TOKEN')
-AS = os.getenv('ACCESS_TOKEN_SECRET')
-
-auth = tweepy.OAuthHandler(CK, CS)
-auth.set_access_token(AT, AS)
-api = tweepy.API(auth)
-
-def pie_chart():
-    img = Image.open('original_icon.jpg')
-    width, height = img.size
-    make_circle(width // 2 - 1, height // 2 - 1, 152, 202, 100 / 100, (224 ,224, 222), img)
-    percent = calc_percent()
-    file_path = "last_percent.txt"
+def is_update(percent):
+    file_path = 'last_percent.txt'
     with open(file_path) as f:
         s = f.read()
         if s == str(percent):
-            exit()
-    print("update icon")
+            return False
     with open(file_path, mode='w') as f:
         f.write(str(percent))
+    return True
+#========================update_icon=================
+
+
+def pie_chart(percent):
+    img = Image.open('original_icon.jpg')
+    width, height = img.size
+    make_circle(width // 2 - 1, height // 2 - 1, 152, 202, 100 / 100, (224 ,224, 222), img)
+    print('update icon')
     make_partiall_circle(width // 2 - 1, height // 2 - 1, 152, 202, 0 / 100, percent, (0, 0, 0), img)
     img.save('created_icon.jpg')
-pie_chart()
-api.update_profile_image("created_icon.jpg")
+
+#========================make_dm=================
+def make_dm(diff_vec, goal_diff_vec, percent):
+    color = ['灰', '茶', '緑', '水', '青', '黄', '橙', '赤', '銅', '銀', '金']
+    dm = ''
+    for i in range(len(diff_vec)):
+        dif = diff_vec[i]
+        goal = goal_diff_vec[i]
+        if goal != 0:
+            dm += f'{color[i]} {dif}/{goal}\n'
+    dm += f'達成率 {int(percent * 100)}%'
+    return dm
+
+def main():
+    load_dotenv()
+
+    CK = os.getenv('API_KEY')
+    CS = os.getenv('API_KEY_SECRET')
+    AT = os.getenv('ACCESS_TOKEN')
+    AS = os.getenv('ACCESS_TOKEN_SECRET')
+
+    auth = tweepy.OAuthHandler(CK, CS)
+    auth.set_access_token(AT, AS)
+    api = tweepy.API(auth)
+
+    diff_vec = make_diff_vec()
+    goal_diff_vec = load_goal()
+    percent = calc_percent(diff_vec, goal_diff_vec)
+    if not is_update(percent):
+        return
+
+    pie_chart(percent)
+    api.update_profile_image('created_icon.jpg')
+    recipient_id = 1112313327235956738
+    api.send_direct_message(recipient_id=recipient_id, text=make_dm(diff_vec, goal_diff_vec, percent))
+
+if __name__ == '__main__':
+    main()
