@@ -96,15 +96,12 @@ def make_partiall_circle(sx, sy, inner_d, outer_d, min_percent, max_percent, col
                 if min_percent <= calc_deg(x - sx, y - sy) / 360 <= max_percent:
                     img.putpixel((x, y), color)
 
-def is_update(percent):
-    file_path = 'last_percent.txt'
-    with open(file_path) as f:
-        s = f.read()
-        if s == str(percent):
-            return False
-    with open(file_path, mode='w') as f:
-        f.write(str(percent))
+def is_update(percent, api, twitter_id):
+    description = api.get_user(user_id=twitter_id).description
+    if f'今月の進捗{int(percent * 100)}%' in description:
+        return False
     return True
+
 #========================update_icon=================
 def pie_chart(percent):
     img = Image.open('original_icon.jpg')
@@ -114,6 +111,14 @@ def pie_chart(percent):
     make_partiall_circle(width // 2 - 1, height // 2 - 1, 152, 202, 0 / 100, percent, (0, 0, 0), img)
     img.save('created_icon.jpg')
 
+#========================update_description=================
+def update_description(percent, api, twitter_id):
+    description = api.get_user(user_id=twitter_id).description.split(' ')
+    for i in range(len(description)):
+        if '今月の進捗' in description[i]:
+            description[i] = f'今月の進捗{int(percent * 100)}%'
+    print('update description:', ' '.join(description))
+    api.update_profile(description=' '.join(description))
 #========================make_dm=================
 def make_dm(diff_vec, goal_diff_vec, percent):
     color = ['灰', '茶', '緑', '水', '青', '黄', '橙', '赤', '銅', '銀', '金']
@@ -125,6 +130,7 @@ def make_dm(diff_vec, goal_diff_vec, percent):
             dm += f'{color[i]} {dif}/{goal}\n'
     dm += f'達成率 {int(percent * 100)}%'
     return dm
+#================================================
 
 def main():
     load_dotenv()
@@ -133,6 +139,7 @@ def main():
     CS = os.getenv('API_KEY_SECRET')
     AT = os.getenv('ACCESS_TOKEN')
     AS = os.getenv('ACCESS_TOKEN_SECRET')
+    twitter_id = 1112313327235956738
 
     auth = tweepy.OAuthHandler(CK, CS)
     auth.set_access_token(AT, AS)
@@ -141,13 +148,13 @@ def main():
     diff_vec = make_diff_vec()
     goal_diff_vec = load_goal()
     percent = calc_percent(diff_vec, goal_diff_vec)
-    if not is_update(percent):
+    if not is_update(percent, api, twitter_id):
         return
 
     pie_chart(percent)
     api.update_profile_image('created_icon.jpg')
-    recipient_id = 1112313327235956738
-    api.send_direct_message(recipient_id=recipient_id, text=make_dm(diff_vec, goal_diff_vec, percent))
+    api.send_direct_message(recipient_id=twitter_id, text=make_dm(diff_vec, goal_diff_vec, percent))
+    update_description(percent, api, twitter_id)
 
 if __name__ == '__main__':
     main()
